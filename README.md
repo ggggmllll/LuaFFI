@@ -24,33 +24,45 @@
 
 所有函数通过模块表导出。
 
-### `luahook.setAbi(abi)`
+### `LuaHook.setAbi(abi)`
 设置全局 FFI ABI 编号。参数为整数，取值范围为 `[FFI_FIRST_ABI, FFI_DEFAULT_ABI]`（由 libffi 定义）。默认使用FFI_DEFAULT_ABI，通常无需额外设置。
 
-### `luahook.registerStruct(name, signature)`
+### `LuaHook.registerStruct(name, signature)`
 注册一个 C 结构体类型。
 - `name`：字符串，结构体名称（后续签名中可用）
 - `signature`：字符串，字段类型列表，例如 `"ii"` 表示两个 `int` 字段。
-  签名格式：自定义的结构体类型用 `|` 分隔，末尾需有 `|`。
+  签名格式：自定义的结构体类型用 `|` 包围。
 
-### `luahook.unregisterStruct(name)`
+### `LuaHook.unregisterStruct(name)`
 注销已注册的结构体。
 
-### `luahook.wrapNative(ptr, signature) -> userdata`
+### `LuaHook.wrapNative(ptr, signature) -> userdata`
 将 C 函数指针包装为 Lua 可调用的对象。
 - `ptr`：lightuserdata，C 函数地址
-- `signature`：字符串，函数签名，格式 `"<返回类型><参数1>[参数2][...]"`。若为可变参数，在最后加 `...` 标记（例如 `"ip..."`）。签名格式：自定义的结构体类型用用 `|` 分隔，末尾需有 `|`。
+- `signature`：字符串，函数签名，格式 `"<返回类型><参数1>[参数2][...]"`。若为可变参数，在最后加 `...` 标记（例如 `"ip..."`）。签名格式：自定义的结构体类型用 `|` 包围。
 - 返回值：full userdata，带有 `__call` 元方法，可直接在 Lua 中调用。
 
-### `luahook.wrapLua(func_name, signature) -> lightuserdata`
+### `LuaHook.wrapLua(func_name, signature) -> lightuserdata`
 将 Lua 函数包装为 C 函数指针（通过 libffi closure）。
 - `func_name`：字符串，全局 Lua 函数名
 - `signature`：字符串，签名格式同 `wrapNative`，但**不支持可变参数**（即不能包含 `...`）
 - 返回值：lightuserdata，即生成的 C 函数可执行地址，可传递给需要 C 回调的 API。
 
-### `luahook.unwrapLua(code)`
+### `LuaHook.unwrapLua(code)`
 释放由 `wrapLua` 创建的闭包资源。
 - `code`：lightuserdata，之前返回的可执行地址。
+
+### `LuaHook.getString(ptr)`
+从 `char*` 指针获取字符串
+- `ptr`：lightuserdata，字符串地址。
+- 返回值：对应地址处字符串。
+
+### `LuaHook.registerArray(name, element_type, size)`
+注册一个 C 数组类型。
+- `name`：字符串，数组名称（后续签名中可用）
+- `element_type`：字符串，数组元素类型。
+  签名格式：自定义的结构体类型用 `|` 包围。
+- `size`：整数，数组大小
 
 ## 🔢 类型签名映射
 
@@ -74,34 +86,35 @@
 | `...`| 可变参数标记        | -          | 仅用于 C 函数签名        |
 
 ### 结构体类型
-签名中用注册时的名称代替字符，例如已注册结构体 `"Point"`，则签名中可用 `|Point|` 作为一个参数类型，用 `|` 分隔，末尾需有 `|`。
+签名中用注册时的名称代替字符，例如已注册结构体 `"Point"`，则签名中可用 `|Point|` 作为一个参数类型，用 `|` 包围。
 
 结构体在 Lua 中表示为**数组**，元素顺序与结构体字段声明顺序一致。嵌套结构体递归展开。
 
 ## 📝 使用示例
 
 ```lua
-local ffi = require("luahook")
+local luahook = require("LuaHook")
 
 -- 设置 ABI（通常默认 0）
-ffi.setAbi(0)
+luahook.setAbi(0)
 
 -- 注册结构体 Point { int x, int y }
-ffi.registerStruct("Point", "ii")
+luahook.registerStruct("Point", "ii")
+luahook.registerArray()
 
 -- 假设有一个 C 函数：int add(int a, int b);
 -- ptr_add 是通过其他方式获得的 lightuserdata
-local add = ffi.wrapNative(ptr_add, "ii")
+local add = luahook.wrapNative(ptr_add, "ii")
 local result = add(3, 5)   -- 返回 8
 
 -- 假设 C 函数：void print_point(Point* p);
 -- ptr_print_point 是函数指针
-local print_point = ffi.wrapNative(ptr_print_point, "vp")
+local print_point = luahook.wrapNative(ptr_print_point, "vp")
 local point = {10, 20}     -- Lua 数组表示 Point
 print_point(point)          -- C 函数接收指针，自动转换
 
 -- 可变参数 C 函数：int sum(int count, ...);
-local sum = ffi.wrapNative(ptr_sum, "ii...")
+local sum = luahook.wrapNative(ptr_sum, "ii...")
 -- 可变参数部分重复最后一个固定参数类型（int），并提升
 print(sum(3, 1, 2, 3))      -- 输出 6
 
@@ -109,10 +122,10 @@ print(sum(3, 1, 2, 3))      -- 输出 6
 function lua_add(a, b)
     return a + b
 end
-local c_callback = ffi.wrapLua("lua_add", "iii")
+local c_callback = luahook.wrapLua("lua_add", "iii")
 -- 可将 c_callback 传递给需要 C 回调的 API
 -- 不再使用时释放
-ffi.unwrapLua(c_callback)
+luahook.unwrapLua(c_callback)
 ```
 
 ## 🔧 编译与依赖
