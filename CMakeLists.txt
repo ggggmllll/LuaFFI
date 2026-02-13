@@ -10,7 +10,7 @@ ExternalProject_Add(
     Lua 
     SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lua
     CONFIGURE_COMMAND ""
-    BUILD_COMMAND ${MAKE_EXE} a
+    BUILD_COMMAND ${MAKE_EXE} CFLAGS="-fPIC" a
     BUILD_IN_SOURCE TRUE
     INSTALL_COMMAND ""
 )
@@ -26,7 +26,7 @@ ExternalProject_Add(
     INSTALL_COMMAND ${MAKE_EXE} install
 )
 
-add_library(LuaHook STATIC)
+add_library(LuaHook SHARED)
 target_sources(LuaHook
     PRIVATE
         src/LuaHook.c
@@ -43,3 +43,12 @@ target_link_directories(LuaHook PRIVATE libffi/out/lib)
 
 add_dependencies(LuaHook Lua libffi)
 target_link_libraries(LuaHook PRIVATE lua ffi m)
+
+if(BUILD_STATIC_LIB)
+    set(STATIC_LIB_NAME ${PROJECT_NAME}-static)    #设置静态库的原始名称
+
+    add_library(${STATIC_LIB_NAME} STATIC $<TARGET_OBJECTS:${PROJECT_NAME}>)
+    set_target_properties(${STATIC_LIB_NAME} PROPERTIES OUTPUT_NAME ${PROJECT_NAME})
+    
+    target_link_libraries(${STATIC_LIB_NAME} PRIVATE lua ffi m)
+endif()

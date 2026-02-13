@@ -142,7 +142,6 @@ int registerStructType(lua_State* L) {
     LUA_TYPE_ASSERT(L, string, 1);
     LUA_TYPE_ASSERT(L, string, 2);
     
-    INIT_STRUCTMAP(32);
     const char* key = lua_tostring(L, 1);
     const char* sign = lua_tostring(L, 2);
     
@@ -184,7 +183,7 @@ int unregisterStructType(lua_State* L) {
     return 0;
 }
 
-/* ---------- 从 Lua 值转换为 C 值（分配临时内存，返回指针） ---------- */
+/* ---------- 从 Lua 值转换为 C 值 ---------- */
 static void lua_to_cvalue(lua_State* L, int idx, ffi_type* type, void* out) {
     if (type->type == FFI_TYPE_STRUCT) {
         Structure* st = get_structure(type);
