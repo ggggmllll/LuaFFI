@@ -142,7 +142,6 @@ int registerStructType(lua_State* L) {
     LUA_TYPE_ASSERT(L, string, 1);
     LUA_TYPE_ASSERT(L, string, 2);
     
-    INIT_STRUCTMAP(32);
     const char* key = lua_tostring(L, 1);
     const char* sign = lua_tostring(L, 2);
     
@@ -184,7 +183,7 @@ int unregisterStructType(lua_State* L) {
     return 0;
 }
 
-/* ---------- 从 Lua 值转换为 C 值（分配临时内存，返回指针） ---------- */
+/* ---------- 从 Lua 值转换为 C 值 ---------- */
 static void lua_to_cvalue(lua_State* L, int idx, ffi_type* type, void* out) {
     if (type->type == FFI_TYPE_STRUCT) {
         Structure* st = get_structure(type);
@@ -659,6 +658,19 @@ int unwrapLuaFunction(lua_State* L) {
     return 0;
 }
 
+int getString(lua_State* L) {
+    LUA_ARGC_ASSERT(L, 1);
+    LUA_TYPE_ASSERT(L, lightuserdata, 1);
+    void* ptr = lua_touserdata(L, 1);
+    if (!ptr) {
+        lua_pushnil(L);
+        return 1;
+    }
+    const char* str = (const char*)ptr;
+    lua_pushstring(L, str);
+    return 1;
+}
+
 int luaopen_LuaHook(lua_State* L) {
     /* 初始化全局结构体映射（确保 __g_struct_map 已创建） */
     INIT_STRUCTMAP(32);
@@ -693,6 +705,9 @@ int luaopen_LuaHook(lua_State* L) {
 
     lua_pushcfunction(L, unwrapLuaFunction);
     lua_setfield(L, -2, "unwrapLua");
+
+    lua_pushcfunction(L, getString);
+    lua_setfield(L, -2, "getString");
 
     return 1;  /* 返回包含所有函数的表 */
 }

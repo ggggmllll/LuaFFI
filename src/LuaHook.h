@@ -5,62 +5,6 @@
 #define MATCH_NATIVE_TYPE(type) (__native_type_map[type])
 #define VARIABLE ((ffi_type*) -1)
 
-typedef enum {
-    VOID = 'v',
-    SCHAR = 'c',
-    UCHAR = 'C',
-    SSHORT = 's',
-    USHORT = 'S',
-    SINT = 'i',
-    UINT = 'I',
-    FLOAT = 'f',
-    SLONG = 'l',
-    ULONG = 'L',
-    DOUBLE = 'd',
-    POINTER = 'p',
-    LONGDOUBLE = 'o',
-    VARIABLE_ARGS = 3026478,
-    STRUCT
-} BasicNativeType;
-
-typedef enum {
-    NONE = 'v',
-    USERDATA = 'p',
-    FUNCTION = 'f',
-    TABLE = 't',
-    STRING = 's',
-    INTEGER = 'i',
-    NUMBER = 'n' 
-} LuaType;
-
-static inline LuaType ctype_to_luatype(BasicNativeType ctype) {
-    switch (ctype) {
-        case VOID:
-            return NONE;
-        case SCHAR:
-        case UCHAR:
-        case SSHORT:
-        case USHORT:
-        case SINT:
-        case UINT:
-        case SLONG:
-        case ULONG:
-            return INTEGER;
-        case FLOAT:
-        case DOUBLE:
-        case LONGDOUBLE:
-            return NUMBER;
-        case STRUCT:
-            return TABLE;
-        case POINTER:
-            return USERDATA;
-        case VARIABLE_ARGS:
-            return NONE;
-        default:
-            return NONE;
-    }
-}
-
 static ffi_type* __native_type_map[128] = {
     ['v'] = &ffi_type_void,
     ['c'] = &ffi_type_schar,
