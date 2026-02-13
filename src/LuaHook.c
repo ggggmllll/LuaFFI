@@ -658,6 +658,19 @@ int unwrapLuaFunction(lua_State* L) {
     return 0;
 }
 
+int getString(lua_State* L) {
+    LUA_ARGC_ASSERT(L, 1);
+    LUA_TYPE_ASSERT(L, lightuserdata, 1);
+    void* ptr = lua_touserdata(L, 1);
+    if (!ptr) {
+        lua_pushnil(L);
+        return 1;
+    }
+    const char* str = (const char*)ptr;
+    lua_pushstring(L, str);
+    return 1;
+}
+
 int luaopen_LuaHook(lua_State* L) {
     /* 初始化全局结构体映射（确保 __g_struct_map 已创建） */
     INIT_STRUCTMAP(32);
@@ -692,6 +705,9 @@ int luaopen_LuaHook(lua_State* L) {
 
     lua_pushcfunction(L, unwrapLuaFunction);
     lua_setfield(L, -2, "unwrapLua");
+
+    lua_pushcfunction(L, getString);
+    lua_setfield(L, -2, "getString");
 
     return 1;  /* 返回包含所有函数的表 */
 }
