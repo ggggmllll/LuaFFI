@@ -1,4 +1,4 @@
-[**中文**](README_zh.md) | [**English**](README.md)
+[**中文**](README.md) | [**English**](README_en.md)
 
 # LuaHook: 动态C函数绑定库
 
