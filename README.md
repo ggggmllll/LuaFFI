@@ -71,9 +71,6 @@
 | `d`  | `double`            | `number`   |                          |
 | `p`  | `void*` / 指针      | `userdata` | lightuserdata 或 full userdata |
 | `o`  | `long double`       | `number`   |                          |
-| `F`  | `_Complex float`    | `number`   | 暂未特殊处理，按两个 number 处理 |
-| `D`  | `_Complex double`   | `number`   |                          |
-| `O`  | `_Complex long double` | `number` |                          |
 | `...`| 可变参数标记        | -          | 仅用于 C 函数签名        |
 
 ### 结构体类型
