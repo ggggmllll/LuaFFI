@@ -34,7 +34,7 @@ target_sources(LuaHook
         FILE_SET HEADERS
         TYPE HEADERS
         BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/src 
-        FILES src/LuaHook.h src/StructMap.h
+        FILES src/LuaHook.h src/StructMap.h src/LuaMap.h
 )
 target_include_directories(LuaHook PRIVATE lua)
 target_include_directories(LuaHook PRIVATE libffi/out/include)
