@@ -59,12 +59,22 @@
 - `ptr`：lightuserdata，字符串地址。
 - 返回值：对应地址处字符串。
 
-### `LuaHook.registerArray(name, element_type, size)`
-注册一个 C 数组类型。
-- `name`：字符串，数组名称（后续签名中可用）
-- `element_type`：字符串，数组元素类型。
-  签名格式：自定义的结构体类型用 `|` 包围。
-- `size`：整数，数组大小
+### `LuaHook.wrapLuaMT(func_name, signature) -> lightuserdata`
+多线程安全版本的 `wrapLua`。与 `wrapLua` 的区别在于，它通过 `xshare` 库将 Lua 函数序列化，生成的 C 闭包可以在任意线程中安全调用，而不会破坏 Lua 状态。每个线程在首次调用该闭包时会自动创建独立的 Lua 状态，并在该状态中执行 Lua 函数，因此可以并发使用。
+
+- `func_name`：字符串，全局 Lua 函数名。
+- `signature`：字符串，签名格式同 `wrapLua`，**不支持可变参数**。
+- 返回值：lightuserdata，即生成的 C 函数可执行地址，可跨线程传递给需要 C 回调的 API。
+
+**注意**：
+- 此功能依赖于 `xshare` 库，使用前需确保已加载。
+- 回调中访问的全局变量或外部资源必须是线程安全的，因为不同线程的 Lua 状态相互独立。
+- 闭包的回调函数内部会自动处理 Lua 状态的创建与销毁，无需用户干预。
+- 不再使用时，必须调用 `unwrapLuaMT` 释放资源。
+
+### `LuaHook.unwrapLuaMT(code)`
+释放由 `wrapLuaMT` 创建的闭包资源。
+- `code`：lightuserdata，之前返回的可执行地址。
 
 ## 🔢 类型签名映射
 
@@ -128,6 +138,20 @@ local c_callback = luahook.wrapLua("lua_add", "iii")
 -- 可将 c_callback 传递给需要 C 回调的 API
 -- 不再使用时释放
 luahook.unwrapLua(c_callback)
+
+
+-- 注册一个 C 数组类型。
+-- name：字符串，数组名称（后续签名中可用）
+-- element_type：字符串，数组元素类型。签名格式：自定义的结构体类型用 `|` 包围。
+-- size：整数，数组大小
+local function registerArray(name, element_type, size)
+    -- 构建结构体签名：size 个相同类型的字段
+    local signature = ""
+    for i = 1, size do
+        signature = signature .. element_type
+    end
+    registerStruct(name, signature)
+end
 ```
 
 ## 🔧 编译与依赖
